@@ -61,6 +61,7 @@ shapiro.test(df$charges)
 # Hence, we can conclude data is not normally distributed.
 
 ```
+
 [The distribution of charges is right skewed blah blah]{style="color:blue"}
 
 ```{r outlier analysis for response var, echo=TRUE}
@@ -91,13 +92,16 @@ max(charges_out.mild)
 
 [distribution seems to be right skewed resulting in the boxplot picking up a lot of outliers. insert outlier analysis. Extreme medical charges may be valid and important for modeling, so we will keep the outliers and transform charges]{style="color:blue"}
 
+
 ```{r transform charges, echo=TRUE}
 df$charges.t = transformTukey(df$charges, plotit=TRUE)
 
 ```
-[talk abt use transformation x ^ lambda where lambda = 0.025]{style="color:blue"}
+
+[talk abt use of transformation x ^ lambda where lambda = 0.025]{style="color:blue"}
 
 b. Explanatory variables:
+
 
 [talk abt which vars are discrete quantitative categorical etc etc]{style="color:blue"}
 
@@ -125,7 +129,9 @@ qqline(df$age, col=2)
 
 ```
 
-[insert distribution analysis stuff like skewed / normal?]
+
+[insert distribution analysis stuff like skewed / normal?]{style="color:blue"}
+
 
 ```{r data visualisation for sex, echo=TRUE}
 sexFreq <- df %>% 
@@ -144,7 +150,10 @@ pie(slice.sex,
 
 ```
 
-[something about balance across levels ie gender]
+
+[something about balance across levels ie gender]{style="color:blue"}
+
+
 
 ```{r data visualisation for bmi, echo=TRUE}
 h.bmi <- hist(df$bmi, 
@@ -168,6 +177,8 @@ qqnorm(df$bmi,
 qqline(df$bmi, col=3)
 
 ```
+
+
 [distribution analysis]{style="color:blue"}
 
 ```{r data visualisation for children, echo=TRUE}
@@ -209,7 +220,9 @@ pie(slice.smoke,
 
 ```
 
+
 [analysis of balance across levels: dont need to consider grouping rare categories since both are reasonably well represented and large enough for stable estimation + lose interpretability if you group]{style="color:blue"}
+
 
 ```{r data visualisation for region, echo=TRUE}
 regionFreq <- df %>% 
@@ -234,6 +247,7 @@ text(x=region_bp, y=regionbar, labels=round(regionbar,0), pos=3, xpd=NA)
 
 
 ```
+
 
 [very nice balance pls talk abt that here]{style="color:blue"}
 
@@ -260,6 +274,7 @@ plot(df$bmi,
      pch = 2) 
 
 ```
+
 Transformed Charges against children
 ```{r Transformed Charges against children, echo=TRUE}
 plot(df$children,
@@ -290,6 +305,7 @@ bcharges.sex <- boxplot(df$charges.t~df$sex,
                col = "orange")
 
 ```
+
 Transformed Charges against smoker
 ```{r Transformed Charges against smoker, echo=TRUE}
 bcharges.smoker <- boxplot(df$charges.t~df$smoker, 
@@ -300,6 +316,7 @@ bcharges.smoker <- boxplot(df$charges.t~df$smoker,
                col = "pink")
 
 ```
+
 Transformed Charges against region
 ```{r Transformed Charges against region, echo=TRUE}
 bcharges.region <- boxplot(df$charges.t~df$region, 
@@ -312,6 +329,7 @@ bcharges.region <- boxplot(df$charges.t~df$region,
 ```
 
 [For both categorical variable X1 and X2, the median and spread are similar in each group. Therefore, Y is not associated with both variables. For categorical variable X3, the median and spread are different in each group. Therefore, Y is associated with X3.]{style="color:blue"}
+
 
 e. Associations between Transformed Charges and Transformed Age, Transformed BMI, Transformed Children
 
@@ -554,6 +572,7 @@ barplot(barmatrix3,
         main = "Frequency of Smokers by Region") 
 
 legend("topright", 
+       cex = 0.5,
        fill = bar_Col3, 
        legend = df4.spread$smoker, 
        title = "Smoking Status") 
@@ -561,12 +580,12 @@ legend("topright",
 ```
 
 
-[assoc]{style="color:blue"}
+[no assoc]{style="color:blue"}
 
 ## Prediction
 
 
-```{r setup, echo=TRUE}
+```{r setup for linear regression, echo=TRUE}
 train_rows <- sample(nrow(df), 0.8 * nrow(df))
 df_train <- df[train_rows, ]
 df_test <- df[-train_rows, ]
