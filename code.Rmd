@@ -6,24 +6,592 @@ date: "2025-10-20"
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)   # For data manipulation
+library(tidyr)   # For data tidying
+library(car)
+library(caret)
+library(knitr)
+library(rcompanion)
+library(psych)
 ```
 
-## R Markdown
+## Problem Statement
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+In this problem, we will predict medical insurance charges based on demographic and lifestyle data and identify which factors are the most important.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
-```{r cars}
-summary(cars)
+```{r q3-read-dataset, include=FALSE}
+setwd ("C:/Users/fuche/Desktop/New folder/scitsitats")
+
+df <- read.csv("medical insurance.csv")
+train_rows <- sample(nrow(df), 0.8 * nrow(df))
+df_train <- df[train_rows, ]
+df_test <- df[-train_rows, ]
+
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
+## Data Visualisation
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+Response variable: charges
+
+```{r data visualisation for response var, echo=TRUE}
+h.charges <- hist(df$charges, 
+            main = "Histogram of Medical Insurance Cost", 
+            labels = TRUE, 
+            xlab = "Charges",
+            ylab = "No. of Beneficiaries", 
+            col = "darkblue", 
+            xlim = c(0, 65000), 
+            ylim = c(0, 400),
+            xaxp = c(0, 65000, 13))
+
+charges.group <- cut(df$charges, breaks = h.charges$breaks, include.lowest = TRUE, dig.lab = 5)
+charges_freq <- table(charges.group)
+kable(charges_freq, caption = "Frequency Distribution by Medical Insurance Cost")
+
+
+plot(density(df$charges), main="Density plot for Medical Insurance Cost")
+
+qqnorm(df$charges, 
+       main="Normal Q-Q Plot for charges")
+qqline(df$charges, col=4)
+
+shapiro.test(df$charges) 
+# H0: Data was drawn from a normally distributed population
+# W = 0.81469, is quite far from 1
+# Given p < 2.2e-16 < 0.05, there is sufficient evidence to reject H0. 
+# Hence, we can conclude data is not normally distributed.
+
+```
+[The distribution of charges is right skewed blah blah]{style="color:blue"}
+
+```{r outlier analysis for response var, echo=TRUE}
+bcharges3 <- boxplot(df$charges, 
+              range = 3, 
+              main = "Boxplot of charges with Range = 3")
+
+bcharges1.5 <- boxplot(df$charges, 
+                 range = 1.5, 
+                 main="Boxplot of charges with Range = 1.5")
+# extreme outliers are those in bX3$out
+bcharges3$out
+length(bcharges3$out)
+min(bcharges3$out)
+max(bcharges3$out)
+
+length(bcharges1.5$out)
+min(bcharges1.5$out)
+
+# moderate outliers are those in bX1.5$out but not in bX3$out 
+# We can use setdiff() to find the difference in two vectors
+
+charges_out.mild <- setdiff(bcharges1.5$out, bcharges3$out)
+max(charges_out.mild)
+
+# moderate outliers are of these values: "insert values"
+``` 
+
+[distribution seems to be right skewed resulting in the boxplot picking up a lot of outliers. insert outlier analysis. Extreme medical charges may be valid and important for modeling, so we will keep the outliers and transform charges]{style="color:blue"}
+
+```{r transform charges, echo=TRUE}
+df$charges.t = transformTukey(df$charges, plotit=TRUE)
+
+```
+[talk abt use transformation x ^ lambda where lambda = 0.025]{style="color:blue"}
+
+b. Explanatory variables:
+
+[talk abt which vars are discrete quantitative categorical etc etc]{style="color:blue"}
+
+Age
+```{r data visualisation for age, echo=TRUE}
+h.age <- hist(df$age, 
+            main = "Histogram of Age of Primary Beneficiary", 
+            labels = TRUE, 
+            xlab = "Age",
+            ylab = "No. of Beneficiaries", 
+            col = "darkred", 
+            xlim = c(15, 65), 
+            ylim = c(0, 200),
+            xaxp = c(15, 65, 10))
+
+age.group <- cut(df$age, breaks = h.age$breaks, include.lowest = TRUE, dig.lab = 5)
+age_freq <- table(age.group)
+kable(age_freq, caption = "Frequency Distribution by Age of Primary Beneficiary")
+
+plot(density(df$age), main="Density plot for Age of Primary Beneficiary")
+
+qqnorm(df$age, 
+       main="Normal Q-Q Plot for age")
+qqline(df$age, col=2)
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+[insert distribution analysis stuff like skewed / normal?]
+
+```{r data visualisation for sex, echo=TRUE}
+sexFreq <- df %>% 
+  count(sex)
+
+kable(sexFreq, caption = "Frequency of Beneficiaries by Gender")
+
+slice.sex <- sexFreq$n
+sex.piepercent <- 100 * round(sexFreq$n / sum(sexFreq$n), 4)
+label <- paste(sexFreq$sex, ",", sep = "", sex.piepercent, "%")
+pie(slice.sex, 
+    labels = label, 
+    col = c("blue", "cyan"),
+    radius = 1,
+    main = "Frequency of Beneficiaries by Gender")
+
+```
+
+[something about balance across levels ie gender]
+
+```{r data visualisation for bmi, echo=TRUE}
+h.bmi <- hist(df$bmi, 
+            main = "Histogram of Body Mass Index", 
+            labels = TRUE, 
+            xlab = "Body Mass Index",
+            ylab = "No. of Beneficiaries", 
+            col = "orange", 
+            xlim = c(15, 55), 
+            ylim = c(0, 500),
+            xaxp = c(15, 55, 8))
+
+bmi.group <- cut(df$bmi, breaks = h.bmi$breaks, include.lowest = TRUE, dig.lab = 5)
+bmi_freq <- table(bmi.group)
+kable(bmi_freq, caption = "Frequency Distribution by Body Mass Index")
+
+plot(density(df$bmi), main="Density plot for BMI")
+
+qqnorm(df$bmi, 
+       main="Normal Q-Q Plot for BMI")
+qqline(df$bmi, col=3)
+
+```
+[distribution analysis]{style="color:blue"}
+
+```{r data visualisation for children, echo=TRUE}
+
+childFreq <- df %>% 
+  count(children)
+
+kable(childFreq, caption = "Frequency of Beneficiaries by Children Covered by Health Insurance")
+
+
+childbar <- childFreq$n
+
+barplot(childbar,
+        names.arg = childFreq$children,
+        col="violet", 
+        main="Frequency of Beneficiaries by Children Covered by Health Insurance",
+        ylim=c(0,600), 
+        ylab="No. of Beneficiaries",
+        xlab = "No. of Children")
+
+```
+
+[analysis]{style="color:blue"}
+
+```{r data visualisation for smoker, echo=TRUE}
+smokeFreq <- df %>% 
+  count(smoker)
+
+kable(smokeFreq, caption = "Frequency of Beneficiaries by Smoking Status")
+
+slice.smoke <- smokeFreq$n
+smoke.piepercent <- 100 * round(smokeFreq$n / sum(smokeFreq$n), 4)
+label <- paste(smokeFreq$smoker, ",", sep = "", smoke.piepercent, "%")
+pie(slice.smoke, 
+    labels = label, 
+    col = c("blue", "cyan"),
+    radius = 1,
+    main = "Frequency of Beneficiaries by Smoking Status")
+
+```
+
+[analysis of balance across levels: dont need to consider grouping rare categories since both are reasonably well represented and large enough for stable estimation + lose interpretability if you group]{style="color:blue"}
+
+```{r data visualisation for region, echo=TRUE}
+regionFreq <- df %>% 
+  count(region)
+
+kable(regionFreq, caption = "Frequency of Beneficiaries by Residential Region in the US")
+
+
+regionbar <- regionFreq$n
+
+region_bp <- barplot(regionbar,
+                     names.arg = regionFreq$region,
+                     col="darkred", 
+                     main="Frequency of Beneficiaries by Residential Region in the US",
+                     ylim=c(0,400), 
+                     ylab="No. of Beneficiaries",
+                     xlab = "Residential Region",
+                     width = c(0.5, 0.5),
+                     space = 2)
+
+text(x=region_bp, y=regionbar, labels=round(regionbar,0), pos=3, xpd=NA)
+
+
+```
+
+[very nice balance pls talk abt that here]{style="color:blue"}
+
+c. Association between Transformed Charges and age, bmi, children
+
+Transformed Charges against age
+```{r Transformed Charges against age, echo=TRUE}
+plot(df$age,
+     df$charges.t, 
+     main = "Scatterplot of Age vs Transformed Charges", 
+     xlab = "Age", 
+     ylab = "Transformed Charges",
+     pch = 1) 
+
+```
+
+Transformed Charges against bmi
+```{r Transformed Charges against bmi, echo=TRUE}
+plot(df$bmi,
+     df$charges.t, 
+     main = "Scatterplot of BMI vs Transformed Charges", 
+     xlab = "BMI", 
+     ylab = "Transformed Charges",
+     pch = 2) 
+
+```
+Transformed Charges against children
+```{r Transformed Charges against children, echo=TRUE}
+plot(df$children,
+     df$charges.t, 
+     main = "Scatterplot of Number of Children vs Transformed Charges", 
+     xlab = "Number of Children", 
+     ylab = "Transformed Charges",
+     pch = 3) 
+
+```
+```{r correlation matrix, echo=TRUE}
+df.num <- df %>%
+  select(charges.t, age, bmi, children)
+corr.test(df.num)
+```
+
+[From the graphs, there are strong/weak linear/non-linear negative/positive associations between blah (talk abt each one). talk abt cor matrix too. hence transformations to the variables are required before fitting a multiple linear regression model.]{style="color:blue"}
+
+d. Association between Transformed Charges and sex, smoker, region
+
+Transformed Charges against sex
+```{r Transformed Charges against sex, echo=TRUE}
+bcharges.sex <- boxplot(df$charges.t~df$sex, 
+               horizontal = TRUE,
+               xlab = "Transformed Charges", 
+               ylab = "Sex",
+               main = "Boxplot of Transformed Charges against Sex",
+               col = "orange")
+
+```
+Transformed Charges against smoker
+```{r Transformed Charges against smoker, echo=TRUE}
+bcharges.smoker <- boxplot(df$charges.t~df$smoker, 
+               horizontal = TRUE,
+               xlab = "Transformed Charges", 
+               ylab = "Smoker",
+               main = "Boxplot of Transformed Charges against Smoking Status",
+               col = "pink")
+
+```
+Transformed Charges against region
+```{r Transformed Charges against region, echo=TRUE}
+bcharges.region <- boxplot(df$charges.t~df$region, 
+               horizontal = TRUE,
+               xlab = "Transformed Charges", 
+               ylab = "Region",
+               main = "Boxplot of Transformed Charges against Region",
+               col = "violet")
+
+```
+
+[For both categorical variable X1 and X2, the median and spread are similar in each group. Therefore, Y is not associated with both variables. For categorical variable X3, the median and spread are different in each group. Therefore, Y is associated with X3.]{style="color:blue"}
+
+e. Associations between Transformed Charges and Transformed Age, Transformed BMI, Transformed Children
+
+Transformed Charges against Transformed Age
+```{r Transformed Charges against log10(age), echo=TRUE}
+df$age.t = log10(df$age)
+
+plot(df$age.t,
+     df$charges.t, 
+     main = "Scatterplot of Transformed Age vs Transformed Charges", 
+     xlab = "Transformed Age", 
+     ylab = "Transformed Charges",
+     pch = 1) 
+
+```
+
+[We examined the variables BMI and children for potential transformations to improve linearity with the transformed response (charges.t). BMI was already approximately normally distributed, and no simple transformations (log, square root, polynomial, Tukey) produced a linear relationship with the transformed response. Similarly, children is a discrete count variable (0, 1, 2, …), and attempts at transformations did not produce a linear trend. Therefore, both variables were retained in their original form for modeling, preserving interpretability while acknowledging that their relationships with the response may be non-linear. i stole this frm gpt so please humanise it]{style="color:blue"}
+
+## Interactions between explanatory variables
+
+```{r age against sex, echo=TRUE}
+bage.sex <- boxplot(df$age~df$sex, 
+               horizontal = TRUE,
+               xlab = "Age", 
+               ylab = "Sex",
+               main = "Boxplot of Age against Sex")
+
+```
+
+[no assoc]{style="color:blue"}
+
+```{r age against bmi, echo=TRUE}
+plot(df$bmi,
+     df$age, 
+     main = "Scatterplot of Age vs BMI", 
+     xlab = "bmi", 
+     ylab = "Age",
+     pch = 6) 
+
+```
+
+[no assoc]{style="color:blue"}
+
+```{r age against children, echo=TRUE}
+plot(df$children,
+     df$age, 
+     main = "Scatterplot of Age vs Number of Children", 
+     xlab = "Number of Children", 
+     ylab = "Age",
+     pch = 6)
+
+```
+
+[no assoc]{style="color:blue"}
+
+```{r age against smoker, echo=TRUE}
+bage.smoke <- boxplot(df$age~df$smoker, 
+               horizontal = TRUE,
+               xlab = "Age", 
+               ylab = "Smoking Status",
+               main = "Boxplot of Age against Smoking Status")
+
+```
+
+[no assoc]{style="color:blue"}
+
+```{r age against region, echo=TRUE}
+bage.region <- boxplot(df$age~df$region, 
+               horizontal = TRUE,
+               xlab = "Age", 
+               ylab = "Region",
+               main = "Boxplot of Age against Region")
+
+```
+
+[no assoc]{style="color:blue"}
+
+```{r bmi against sex, echo=TRUE}
+bbmi.sex <- boxplot(df$bmi~df$sex, 
+               horizontal = TRUE,
+               xlab = "BMI", 
+               ylab = "Sex",
+               main = "Boxplot of BMI against Sex")
+
+```
+
+[no assoc]{style="color:blue"}
+
+```{r children against sex, echo=TRUE}
+bchildren.sex <- boxplot(df$children~df$sex, 
+               horizontal = TRUE,
+               xlab = "Number of Children", 
+               ylab = "Sex",
+               main = "Boxplot of Number of Children against Sex")
+
+```
+
+[no assoc]{style="color:blue"}
+
+```{r sex against smoker, echo=TRUE}
+df2 <- df %>% 
+  count(sex, smoker)
+
+df2.spread <- df2 %>% 
+  spread(key = smoker, value = n, fill = 0)
+
+df2.spread[is.na(df2.spread)] <- 0 
+
+kable(df2.spread, caption = "Contingency table for Sex and Smoking Status")
+
+barmatrix <- as.matrix(df2.spread[,c(2, 3)]) 
+
+bar_Col <- c("yellow","orange")
+
+barplot(barmatrix,
+        names.arg = c("yes", "no"), 
+        col = bar_Col, 
+        beside = TRUE, 
+        ylim = c(0,700), 
+        ylab = "Number of Beneficiaries",
+        main = "Frequency of Females / Males by Smoking Status") 
+
+legend("topright", 
+       fill = bar_Col, 
+       legend = df2.spread$sex, # or DF2.spread$Y, whichever is rows
+       title = "Sex") # or DF2.spread$Y, whichever is rows
+
+```
+
+
+[no assoc]{style="color:blue"}
+
+```{r region against sex, echo=TRUE}
+df3 <- df %>% 
+  count(sex, region)
+
+df3.spread <- df3 %>% 
+  spread(key = region, value = n, fill = 0)
+
+df3.spread[is.na(df3.spread)] <- 0 
+
+kable(df3.spread, caption = "Contingency table for Sex and Region")
+
+barmatrix2 <- as.matrix(df3.spread[,c(2:5)]) 
+
+bar_Col2 <- c("pink","brown")
+
+barplot(barmatrix2,
+        names.arg = c("northeast", "northwest", "southeast", "southwest"), 
+        col = bar_Col2, 
+        beside = TRUE, 
+        ylim = c(0,300), 
+        ylab = "Number of Beneficiaries",
+        main = "Frequency of Females / Males by Region") 
+
+legend("topright", 
+       fill = bar_Col2, 
+       legend = df3.spread$sex, 
+       title = "Sex") 
+
+```
+
+[no assoc]{style="color:blue"}
+
+
+```{r bmi against children, echo=TRUE}
+plot(df$children,
+     df$bmi, 
+     main = "Scatterplot of No. of Children vs BMI", 
+     xlab = "No. of Children", 
+     ylab = "BMI",
+     pch = 6) 
+
+```
+
+[no assoc]{style="color:blue"}
+
+```{r bmi against smoker, echo=TRUE}
+bbmi.smoke <- boxplot(df$bmi~df$smoke, 
+               horizontal = TRUE,
+               xlab = "BMI", 
+               ylab = "Smoking Status",
+               main = "Boxplot of BMI against Smoking Status")
+
+```
+
+[no assoc]{style="color:blue"}
+
+```{r bmi against region, echo=TRUE}
+bbmi.region <- boxplot(df$bmi~df$region,
+               xlab = "BMI", 
+               ylab = "Region",
+               main = "Boxplot of BMI against Region")
+
+```
+
+[some assoc for southeast]{style="color:blue"}
+
+```{r children against smoker, echo=TRUE}
+bchild.smoker <- boxplot(df$children~df$smoker,
+               xlab = "Number of Children", 
+               ylab = "Smoking Status",
+               main = "Boxplot of Number of Children against Smoking Status")
+
+```
+
+[no assoc]{style="color:blue"}
+
+```{r children against region, echo=TRUE}
+bchild.region <- boxplot(df$children~df$region,
+               xlab = "No. of Children", 
+               ylab = "Region",
+               main = "Boxplot of No. of Children against Region")
+
+```
+
+[no assoc]{style="color:blue"}
+
+```{r smoker against region, echo=TRUE}
+df4 <- df %>% 
+  count(smoker, region)
+
+df4.spread <- df4 %>% 
+  spread(key = region, value = n, fill = 0)
+
+df4.spread[is.na(df4.spread)] <- 0 
+
+kable(df4.spread, caption = "Contingency table for Smoking Status and Region")
+
+barmatrix3 <- as.matrix(df4.spread[,c(2:5)]) 
+
+bar_Col3 <- c("gray","pink")
+
+barplot(barmatrix3,
+        names.arg = c("northeast", "northwest", "southeast", "southwest"), 
+        col = bar_Col3, 
+        beside = TRUE, 
+        ylim = c(0,300), 
+        ylab = "Number of Beneficiaries",
+        main = "Frequency of Smokers by Region") 
+
+legend("topright", 
+       fill = bar_Col3, 
+       legend = df4.spread$smoker, 
+       title = "Smoking Status") 
+
+```
+
+
+[assoc]{style="color:blue"}
+
+## Prediction
+
+Build regression models to predict insurance charges using features like age, BMI, smoking habits and region.
+
+```{r Creating Dummy Variables, echo=TRUE}
+# Convert the 'sex' variable to a factor. The category "female" is set as the reference group.
+df_train$sex <- factor(df_train$sex, levels=c("female", "male"))
+df_train$sex <- relevel(df_train$sex, ref="female")
+contrasts(df_train$sex)
+
+# Convert the 'smoker' variable to a factor. The category "no" is set as the reference group.
+df_train$smoker <- factor(df_train$smoker, levels=c("yes", "no"))
+df_train$smoker <- relevel(df_train$smoker, ref="yes")
+contrasts(df_train$smoker)
+
+# Convert the 'region' variable to a factor. The category "northeast" is set as the reference group.
+df_train$region <- factor(df_train$region, levels=c("northeast", "northwest", "southeast", "southwest"))
+df_train$region <- relevel(df_train$region, ref="northeast")
+contrasts(df_train$region)
+```
+
+b. Baseline Performance
+
+```{r Baseline Model, echo=TRUE}
+
+mod.base <- lm(charges ~ age + sex + bmi + children + smoker + region, df_train)
+summary(mod.base)
+
+``` 
