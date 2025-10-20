@@ -24,9 +24,6 @@ In this problem, we will predict medical insurance charges based on demographic 
 setwd ("C:/Users/fuche/Desktop/New folder/scitsitats")
 
 df <- read.csv("medical insurance.csv")
-train_rows <- sample(nrow(df), 0.8 * nrow(df))
-df_train <- df[train_rows, ]
-df_test <- df[-train_rows, ]
 
 ```
 
@@ -568,6 +565,13 @@ legend("topright",
 
 ## Prediction
 
+
+```{r setup, echo=TRUE}
+train_rows <- sample(nrow(df), 0.8 * nrow(df))
+df_train <- df[train_rows, ]
+df_test <- df[-train_rows, ]
+```
+
 Build regression models to predict insurance charges using features like age, BMI, smoking habits and region.
 
 ```{r Creating Dummy Variables, echo=TRUE}
@@ -591,7 +595,7 @@ b. Baseline Performance
 
 ```{r Baseline Model, echo=TRUE}
 
-mod.base <- lm(charges ~ age + sex + bmi + children + smoker + region, df_train)
+mod.base <- lm(charges.t ~ age + sex + bmi + children + smoker + region, df_train)
 summary(mod.base)
 
 ``` 
