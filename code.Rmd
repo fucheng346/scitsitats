@@ -342,6 +342,8 @@ bcharges.smoker <- boxplot(df$charges.t~df$smoker,
                main = "Boxplot of Transformed Charges against Smoking Status",
                col = "pink")
 
+cor.test(df$charges.t, as.numeric(df$smoker == "yes"))
+
 ```
 
 - Transformed Charges against region
@@ -372,6 +374,8 @@ plot(df$age.t,
      xlab = "Transformed Age", 
      ylab = "Transformed Charges",
      pch = 1) 
+
+cor.test(df$charges.t, df$age.t)
 
 ```
 
@@ -643,8 +647,9 @@ legend("topright",
 
 [no association]{style="color:blue"}
 
-## Prediction
 
+
+## Prediction
 
 ```{r setup for linear regression, echo=TRUE}
 train_rows <- sample(nrow(df), 0.8 * nrow(df))
@@ -654,16 +659,39 @@ df_test <- df[-train_rows, ]
 
 Build regression models to predict insurance charges using features like age, BMI, smoking habits and region.
 
+a. Baseline Model
+
+Response variable vs the most strongly correlated explanatory variables - smoker and age
+
+Let c, s, a denote charges.t, smoker, age.t respectively. For smoker, the reference category is “yes”.
+
+```{r Baseline Model, echo=TRUE}
+
+# Convert the 'smoker' variable to a factor. The category "yes" is set as the reference group.
+df_train$smoker <- factor(df_train$smoker, levels=c("yes", "no"))
+df_train$smoker <- relevel(df_train$smoker, ref="yes")
+contrasts(df_train$smoker)
+
+mod.base <- lm(charges.t ~ smoker + age.t, data = df_train)
+summary(mod.base)
+
+``` 
+
+[charges.t = 1.103 - (0.04819)s + (0.09174)a]
+
+[The multiple R-squared statistic (0.7421) indicates that 74.21% of the variation in the dependent variable (charges.t) is explained by the independent variables (smoker and age.t). This suggests that other factors not included in the model might also influence medical insurance charges.]
+
+c. Building Improved Models
+
+To improve upon our baseline model (`charges.t ~ smoker + age.t`), we use **forward stepwise selection**. 
+By using this method, we can determine whether adding variables like BMI, number of children, sex, or region meaningfully improves our baseline model.
+
 ```{r Creating Dummy Variables, echo=TRUE}
 # Convert the 'sex' variable to a factor. The category "female" is set as the reference group.
 df_train$sex <- factor(df_train$sex, levels=c("female", "male"))
 df_train$sex <- relevel(df_train$sex, ref="female")
 contrasts(df_train$sex)
 
-# Convert the 'smoker' variable to a factor. The category "no" is set as the reference group.
-df_train$smoker <- factor(df_train$smoker, levels=c("yes", "no"))
-df_train$smoker <- relevel(df_train$smoker, ref="yes")
-contrasts(df_train$smoker)
 
 # Convert the 'region' variable to a factor. The category "northeast" is set as the reference group.
 df_train$region <- factor(df_train$region, levels=c("northeast", "northwest", "southeast", "southwest"))
@@ -671,34 +699,8 @@ df_train$region <- relevel(df_train$region, ref="northeast")
 contrasts(df_train$region)
 ```
 
-b. Baseline Performance
 
-```{r Baseline Model, echo=TRUE}
-
-baseline_value <- mean(df_train$charges.t)
-
-df_train$baseline_pred <- rep(baseline_value, nrow(df_train))
-
-base_rmse <- sqrt(mean((df_train$charges.t - df_train$baseline_pred)^2))
-base_mae  <- mean(abs(df_train$charges.t - df_train$baseline_pred))
-
-base_rmse
-base_mae
-
-``` 
-
-
-c. Building Models
-
-```{r placeholder Model, echo=TRUE}
-
-mod.all <- lm(charges.t ~ age.t + sex + bmi + children + smoker + region, df_train)
-summary(mod.all)
-
-``` 
-
-```{r Model, echo=TRUE}
-
-step(mod.all, direction = "backward", trace = 1)
+```{r Forward Stepwise Model, echo=TRUE}
+step(mod.base, scope = ~ age.t + smoker + sex + bmi + children + region + bmi*region, direction = "forward", trace = 1)
 
 ``` 
