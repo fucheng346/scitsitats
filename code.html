@@ -1343,7 +1343,8 @@ legend(&quot;topright&quot;,
 </div>
 <div id="prediction" class="section level2">
 <h2>Prediction</h2>
-<pre class="r"><code>train_rows &lt;- sample(nrow(df), 0.8 * nrow(df))
+<pre class="r"><code>set.seed(123)
+train_rows &lt;- sample(nrow(df), 0.8 * nrow(df))
 df_train &lt;- df[train_rows, ]
 df_test &lt;- df[-train_rows, ]</code></pre>
 <p>Build regression models to predict insurance charges using features
@@ -1370,21 +1371,21 @@ summary(mod.base)</code></pre>
 ## 
 ## Residuals:
 ##       Min        1Q    Median        3Q       Max 
-## -0.027298 -0.007120 -0.001389  0.002517  0.066616 
+## -0.026867 -0.007323 -0.001377  0.002589  0.068903 
 ## 
 ## Coefficients:
 ##              Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)  1.153654   0.004148   278.1   &lt;2e-16 ***
-## smokerno    -0.049423   0.001086   -45.5   &lt;2e-16 ***
-## age.t        0.090726   0.002599    34.9   &lt;2e-16 ***
+## (Intercept)  1.155283   0.004283  269.77   &lt;2e-16 ***
+## smokerno    -0.048976   0.001090  -44.94   &lt;2e-16 ***
+## age.t        0.089331   0.002681   33.31   &lt;2e-16 ***
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
-## Residual standard error: 0.01447 on 1067 degrees of freedom
-## Multiple R-squared:  0.7483, Adjusted R-squared:  0.7478 
-## F-statistic:  1586 on 2 and 1067 DF,  p-value: &lt; 2.2e-16</code></pre>
+## Residual standard error: 0.01462 on 1067 degrees of freedom
+## Multiple R-squared:  0.7406, Adjusted R-squared:  0.7401 
+## F-statistic:  1523 on 2 and 1067 DF,  p-value: &lt; 2.2e-16</code></pre>
 <p>[charges.t = 1.103 - (0.04819)s + (0.09174)a]</p>
-<p>[The multiple R-squared statistic (0.7402) indicates that 74.02% of
+<p>[The multiple R-squared statistic (0.7406) indicates that 74.06% of
 the variation in the dependent variable (charges.t) is explained by the
 independent variables (smoker and age.t). This suggests that other
 factors not included in the model might also influence medical insurance
@@ -1414,59 +1415,59 @@ contrasts(df_train$region)</code></pre>
 ## southeast         0         1         0
 ## southwest         0         0         1</code></pre>
 <pre class="r"><code>step(mod.base, scope = ~ age.t + smoker + sex + bmi + children + region + bmi*region + age.t*smoker, direction = &quot;forward&quot;, trace = 1)</code></pre>
-<pre><code>## Start:  AIC=-9061.63
+<pre><code>## Start:  AIC=-9039.76
 ## charges.t ~ smoker + age.t
 ## 
 ##                Df Sum of Sq     RSS     AIC
-## + age.t:smoker  1  0.033690 0.18966 -9234.6
-## + children      1  0.012408 0.21094 -9120.8
-## + bmi           1  0.004492 0.21886 -9081.4
-## + region        3  0.002184 0.22117 -9066.1
-## + sex           1  0.000673 0.22268 -9062.9
-## &lt;none&gt;                      0.22335 -9061.6
+## + age.t:smoker  1  0.035454 0.19251 -9218.6
+## + children      1  0.009097 0.21887 -9081.3
+## + bmi           1  0.006291 0.22167 -9067.7
+## + sex           1  0.000774 0.22719 -9041.4
+## + region        3  0.001499 0.22646 -9040.8
+## &lt;none&gt;                      0.22796 -9039.8
 ## 
-## Step:  AIC=-9234.58
+## Step:  AIC=-9218.63
 ## charges.t ~ smoker + age.t + smoker:age.t
 ## 
 ##            Df Sum of Sq     RSS     AIC
-## + children  1 0.0129454 0.17672 -9308.2
-## + bmi       1 0.0040359 0.18563 -9255.6
-## + region    3 0.0019908 0.18767 -9239.9
-## + sex       1 0.0005298 0.18913 -9235.6
-## &lt;none&gt;                  0.18966 -9234.6
+## + children  1 0.0098341 0.18268 -9272.7
+## + bmi       1 0.0049318 0.18758 -9244.4
+## + region    3 0.0016470 0.19086 -9221.8
+## + sex       1 0.0006233 0.19189 -9220.1
+## &lt;none&gt;                  0.19251 -9218.6
 ## 
-## Step:  AIC=-9308.23
+## Step:  AIC=-9272.74
 ## charges.t ~ smoker + age.t + children + smoker:age.t
 ## 
 ##          Df Sum of Sq     RSS     AIC
-## + bmi     1 0.0039612 0.17275 -9330.5
-## + region  3 0.0025149 0.17420 -9317.6
-## + sex     1 0.0006630 0.17605 -9310.2
-## &lt;none&gt;                0.17672 -9308.2
+## + bmi     1 0.0050376 0.17764 -9300.7
+## + region  3 0.0017668 0.18091 -9277.1
+## + sex     1 0.0007559 0.18192 -9275.2
+## &lt;none&gt;                0.18268 -9272.7
 ## 
-## Step:  AIC=-9330.49
+## Step:  AIC=-9300.66
 ## charges.t ~ smoker + age.t + children + bmi + smoker:age.t
 ## 
 ##          Df Sum of Sq     RSS     AIC
-## + region  3 0.0043338 0.16842 -9351.7
-## + sex     1 0.0008608 0.17189 -9333.8
-## &lt;none&gt;                0.17275 -9330.5
+## + region  3 0.0029026 0.17474 -9312.3
+## + sex     1 0.0011040 0.17653 -9305.3
+## &lt;none&gt;                0.17764 -9300.7
 ## 
-## Step:  AIC=-9351.67
+## Step:  AIC=-9312.29
 ## charges.t ~ smoker + age.t + children + bmi + region + smoker:age.t
 ## 
 ##              Df  Sum of Sq     RSS     AIC
-## + sex         1 0.00091321 0.16751 -9355.5
-## &lt;none&gt;                     0.16842 -9351.7
-## + bmi:region  3 0.00057966 0.16784 -9349.4
+## + sex         1 0.00119566 0.17354 -9317.6
+## &lt;none&gt;                     0.17474 -9312.3
+## + bmi:region  3 0.00078175 0.17395 -9311.1
 ## 
-## Step:  AIC=-9355.49
+## Step:  AIC=-9317.63
 ## charges.t ~ smoker + age.t + children + bmi + region + sex + 
 ##     smoker:age.t
 ## 
-##              Df  Sum of Sq     RSS     AIC
-## &lt;none&gt;                     0.16751 -9355.5
-## + bmi:region  3 0.00054274 0.16697 -9353.0</code></pre>
+##              Df Sum of Sq     RSS     AIC
+## &lt;none&gt;                    0.17354 -9317.6
+## + bmi:region  3 0.0007127 0.17283 -9316.0</code></pre>
 <pre><code>## 
 ## Call:
 ## lm(formula = charges.t ~ smoker + age.t + children + bmi + region + 
@@ -1474,11 +1475,11 @@ contrasts(df_train$region)</code></pre>
 ## 
 ## Coefficients:
 ##     (Intercept)         smokerno            age.t         children  
-##       1.2438111       -0.1732465        0.0250460        0.0029414  
+##       1.2503161       -0.1790058        0.0203757        0.0025735  
 ##             bmi  regionnorthwest  regionsoutheast  regionsouthwest  
-##       0.0004155       -0.0022505       -0.0052932       -0.0045079  
+##       0.0004307       -0.0021368       -0.0038532       -0.0044115  
 ##         sexmale   smokerno:age.t  
-##      -0.0018587        0.0794497</code></pre>
+##      -0.0021305        0.0833601</code></pre>
 <pre class="r"><code>mod &lt;- lm(formula = charges.t ~ smoker + age.t + children + bmi + region + sex + smoker:age.t, data = df_train)
 
 summary(mod)</code></pre>
@@ -1489,35 +1490,35 @@ summary(mod)</code></pre>
 ## 
 ## Residuals:
 ##       Min        1Q    Median        3Q       Max 
-## -0.023650 -0.006121 -0.002933  0.001558  0.073954 
+## -0.025419 -0.006077 -0.002843  0.001624  0.073852 
 ## 
 ## Coefficients:
 ##                   Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)      1.244e+00  7.823e-03 158.995  &lt; 2e-16 ***
-## smokerno        -1.732e-01  8.596e-03 -20.154  &lt; 2e-16 ***
-## age.t            2.505e-02  4.868e-03   5.145 3.19e-07 ***
-## children         2.941e-03  3.178e-04   9.256  &lt; 2e-16 ***
-## bmi              4.155e-04  6.731e-05   6.174 9.50e-10 ***
-## regionnorthwest -2.251e-03  1.108e-03  -2.031   0.0425 *  
-## regionsoutheast -5.293e-03  1.102e-03  -4.805 1.77e-06 ***
-## regionsouthwest -4.508e-03  1.100e-03  -4.099 4.46e-05 ***
-## sexmale         -1.859e-03  7.732e-04  -2.404   0.0164 *  
-## smokerno:age.t   7.945e-02  5.494e-03  14.462  &lt; 2e-16 ***
+## (Intercept)      1.2503161  0.0082755 151.087  &lt; 2e-16 ***
+## smokerno        -0.1790058  0.0090398 -19.802  &lt; 2e-16 ***
+## age.t            0.0203757  0.0051167   3.982 7.29e-05 ***
+## children         0.0025735  0.0003265   7.882 7.99e-15 ***
+## bmi              0.0004307  0.0000680   6.335 3.51e-10 ***
+## regionnorthwest -0.0021368  0.0011236  -1.902 0.057475 .  
+## regionsoutheast -0.0038532  0.0011296  -3.411 0.000671 ***
+## regionsouthwest -0.0044114  0.0011286  -3.909 9.87e-05 ***
+## sexmale         -0.0021305  0.0007884  -2.702 0.006993 ** 
+## smokerno:age.t   0.0833601  0.0057706  14.446  &lt; 2e-16 ***
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
-## Residual standard error: 0.01257 on 1060 degrees of freedom
-## Multiple R-squared:  0.8112, Adjusted R-squared:  0.8096 
-## F-statistic:   506 on 9 and 1060 DF,  p-value: &lt; 2.2e-16</code></pre>
+## Residual standard error: 0.0128 on 1060 degrees of freedom
+## Multiple R-squared:  0.8025, Adjusted R-squared:  0.8009 
+## F-statistic: 478.7 on 9 and 1060 DF,  p-value: &lt; 2.2e-16</code></pre>
 <pre class="r"><code>vif(mod, type = &quot;predictor&quot;)</code></pre>
 <pre><code>## GVIFs computed for predictors</code></pre>
 <pre><code>##              GVIF Df GVIF^(1/(2*Df)) Interacts With
-## smoker   1.036063  3        1.005922          age.t
-## age.t    1.036063  3        1.005922         smoker
-## children 1.011735  1        1.005851           --  
-## bmi      1.115126  1        1.055995           --  
-## region   1.112106  3        1.017867           --  
-## sex      1.011975  1        1.005970           --  
+## smoker   1.036683  3        1.006022          age.t
+## age.t    1.036683  3        1.006022         smoker
+## children 1.009832  1        1.004904           --  
+## bmi      1.115715  1        1.056274           --  
+## region   1.106000  3        1.016933           --  
+## sex      1.014108  1        1.007029           --  
 ##                              Other Predictors
 ## smoker             children, bmi, region, sex
 ## age.t              children, bmi, region, sex
@@ -1534,13 +1535,13 @@ test_mae &lt;- mean(abs(df_test$charges.t - df_test$pred_charges.t))
 test_r2 &lt;- 1 - sum((df_test$charges.t - df_test$pred_charges.t)^2) / sum((df_test$charges.t - mean(df_test$charges.t))^2)
 
 test_rmse</code></pre>
-<pre><code>## [1] 0.01333508</code></pre>
+<pre><code>## [1] 0.01242761</code></pre>
 <pre class="r"><code>test_mae</code></pre>
-<pre><code>## [1] 0.008333274</code></pre>
+<pre><code>## [1] 0.007776367</code></pre>
 <pre class="r"><code>test_r2</code></pre>
-<pre><code>## [1] 0.7841638</code></pre>
-<p>[The coefficient of determination R-squared (0.8203) indicates that
-82.03% of the variation in the dependent variable (charges.t) is
+<pre><code>## [1] 0.8194483</code></pre>
+<p>[The coefficient of determination R-squared (0.8194) indicates that
+81.94% of the variation in the dependent variable (charges.t) is
 explained by the predictors included in the model, namely smoker status,
 age, number of children, BMI, sex, and region. This indicates that the
 selected predictors capture the majority of the variation in medical
