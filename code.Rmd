@@ -439,7 +439,7 @@ bage.smoke <- boxplot(df$age~df$smoker,
 
 ```
 
-[no association]{style="color:blue"}
+[some association]{style="color:blue"}
 
 - age against region
 
@@ -679,7 +679,7 @@ summary(mod.base)
 
 [charges.t = 1.103 - (0.04819)s + (0.09174)a]
 
-[The multiple R-squared statistic (0.7421) indicates that 74.21% of the variation in the dependent variable (charges.t) is explained by the independent variables (smoker and age.t). This suggests that other factors not included in the model might also influence medical insurance charges.]
+[The multiple R-squared statistic (0.7402) indicates that 74.02% of the variation in the dependent variable (charges.t) is explained by the independent variables (smoker and age.t). This suggests that other factors not included in the model might also influence medical insurance charges.]
 
 c. Building Improved Models
 
@@ -700,7 +700,45 @@ contrasts(df_train$region)
 ```
 
 
-```{r Forward Stepwise Model, echo=TRUE}
-step(mod.base, scope = ~ age.t + smoker + sex + bmi + children + region + bmi*region, direction = "forward", trace = 1)
+```{r Forward Stepwise Model Selection, echo=TRUE}
+step(mod.base, scope = ~ age.t + smoker + sex + bmi + children + region + bmi*region + age.t*smoker, direction = "forward", trace = 1)
 
 ``` 
+```{r build model, echo=TRUE}
+mod <- lm(formula = charges.t ~ smoker + age.t + children + bmi + region + sex + smoker:age.t, data = df_train)
+
+summary(mod)
+
+```
+
+```{r check multicollinearity, echo=TRUE}
+vif(mod, type = "predictor")
+
+``` 
+
+```{r model test, echo=TRUE}
+
+df_test$pred_charges.t <- predict(mod, newdata = df_test)
+
+test_rmse <- sqrt(mean((df_test$charges.t - df_test$pred_charges.t)^2))
+
+test_mae <- mean(abs(df_test$charges.t - df_test$pred_charges.t))
+
+test_r2 <- 1 - sum((df_test$charges.t - df_test$pred_charges.t)^2) / sum((df_test$charges.t - mean(df_test$charges.t))^2)
+
+test_rmse
+test_mae
+test_r2
+
+``` 
+
+[The coefficient of determination R-squared (0.8203) indicates that 82.03% of the variation in the dependent variable (charges.t) is explained by the predictors included in the model, namely smoker status, age, number of children, BMI, sex, and region. This indicates that the selected predictors capture the majority of the variation in medical insurance charges, highlighting their strong influence on costs.]
+
+
+
+
+
+
+
+
+
