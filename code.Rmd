@@ -24,7 +24,6 @@ library(rcompanion)
 library(psych)
 
 setwd ("C:/Users/fuche/Desktop/New folder/scitsitats")
-df <- read.csv("medical insurance.csv")
 
 ```
 
