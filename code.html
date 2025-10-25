@@ -1396,7 +1396,8 @@ charges.]</p>
 <p>To improve upon our baseline model
 (<code>charges.t ~ smoker + age.t</code>), we use <strong>forward
 stepwise selection</strong>. By using this method, we can determine
-whether adding variables like BMI, number of children, sex, or region
+whether adding variables like BMI, number of children, sex, region, or
+the potential interaction terms identified in the previous section
 meaningfully improves our baseline model.</p>
 <pre class="r"><code># Convert the &#39;sex&#39; variable to a factor. The category &quot;female&quot; is set as the reference group.
 df_train$sex &lt;- factor(df_train$sex, levels=c(&quot;female&quot;, &quot;male&quot;))
@@ -1546,6 +1547,9 @@ explained by the predictors included in the model, namely smoker status,
 age, number of children, BMI, sex, and region. This indicates that the
 selected predictors capture the majority of the variation in medical
 insurance charges, highlighting their strong influence on costs.]</p>
+</div>
+<div id="feature-analysis" class="section level2">
+<h2>Feature Analysis</h2>
 </div>
 
 
