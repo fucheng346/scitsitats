@@ -684,7 +684,7 @@ summary(mod.base)
 c. Building Improved Models
 
 To improve upon our baseline model (`charges.t ~ smoker + age.t`), we use **forward stepwise selection**. 
-By using this method, we can determine whether adding variables like BMI, number of children, sex, or region meaningfully improves our baseline model.
+By using this method, we can determine whether adding variables like BMI, number of children, sex, region, or the potential interaction terms identified in the previous section meaningfully improves our baseline model.
 
 ```{r Creating Dummy Variables, echo=TRUE}
 # Convert the 'sex' variable to a factor. The category "female" is set as the reference group.
@@ -736,9 +736,6 @@ test_r2
 
 
 
-
-
-
-
+## Feature Analysis
 
 
