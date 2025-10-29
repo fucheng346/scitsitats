@@ -22,6 +22,9 @@ library(caret)
 library(knitr)
 library(rcompanion)
 library(psych)
+library(rpart)
+library(rpart.plot)
+library(ggplot2)
 
 setwd ("C:/Users/fuche/Desktop/New folder/scitsitats")
 
@@ -679,7 +682,7 @@ summary(mod.base)
 
 [charges.t = 1.103 - (0.04819)s + (0.09174)a]
 
-[The multiple R-squared statistic (0.7406) indicates that 74.06% of the variation in the dependent variable (charges.t) is explained by the independent variables (smoker and age.t). This suggests that other factors not included in the model might also influence medical insurance charges.]
+[The multiple R-squared statistic (0.7406) indicates that 74.06% of the variation in the dependent variable (charges.t) is explained by the independent variables (smoker and age.t). This suggests that other factors not included in the model might also influence medical insurance charges.]{style="color:blue"}
 
 c. Building Improved Models
 
@@ -732,10 +735,149 @@ test_r2
 
 ``` 
 
-[The coefficient of determination R-squared (0.8194) indicates that 81.94% of the variation in the dependent variable (charges.t) is explained by the predictors included in the model, namely smoker status, age, number of children, BMI, sex, and region. This indicates that the selected predictors capture the majority of the variation in medical insurance charges, highlighting their strong influence on costs.]
+[The coefficient of determination R-squared (0.8194) indicates that 81.94% of the variation in the dependent variable (charges.t) is explained by the predictors included in the model, namely smoker status, age, number of children, BMI, sex, and region. This indicates that the selected predictors capture the majority of the variation in medical insurance charges, highlighting their strong influence on costs.]{style="color:blue"}
 
 
 
 ## Feature Analysis
 
+n-Fold Cross-Validation for Linear Regression model
 
+```{r n-fold cross validation, echo=TRUE}
+set.seed(123)
+
+# Define cross-validation (10-fold CV)
+train_control <- trainControl(method = "cv", number = 10)
+
+# Train the model 
+cv_model <- train(
+  charges.t ~ smoker + age.t + children + bmi + region + sex + smoker:age.t,
+  data = df,
+  method = "lm",
+  trControl = train_control
+)
+
+# Print summary of CV results
+print(cv_model)
+
+# Extract model performance metrics
+cv_results <- cv_model$results
+cv_results
+
+# predicted vs actual plot (base R version)
+pred <- predict(cv_model, newdata = df)
+plot(df$charges.t, pred,
+     main = "Predicted vs Actual (10-Fold CV, Linear Regression)",
+     xlab = "Actual (Transformed Charges)",
+     ylab = "Predicted (Transformed Charges)",
+     pch = 19, col = "darkblue")
+abline(0, 1, col = "red", lwd = 2, lty = 2)
+grid()
+
+```
+## Decision Tree
+
+```{r decision tree model, echo=TRUE}
+## 1. Build decision tree model
+# Using the same train-test split from regression model
+tree_model <- rpart(charges.t ~ age.t + bmi + smoker + sex + children + region,data = df_train, 
+                    method = "anova",      # for continuous outcome
+                    control = rpart.control(cp = 0.01, minsplit = 20))
+
+## 2. Visualize the decision tree
+rpart.plot(tree_model,
+           main = "Decision Tree for Insurance Charges",
+           type = 2, extra = 101, fallen.leaves = TRUE,
+           box.palette = "RdYlGn")
+
+
+## 3. Evaluate model on test set
+# Predict on test data
+df_test$pred_tree <- predict(tree_model, newdata = df_test)
+
+# Compute performance metrics
+tree_rmse <- sqrt(mean((df_test$pred_tree - df_test$charges.t)^2))
+tree_mae  <- mean(abs(df_test$pred_tree - df_test$charges.t))
+tree_r2   <- cor(df_test$pred_tree, df_test$charges.t)^2
+
+cat("\nDecision Tree Performance Metrics:\n")
+cat("RMSE:", round(tree_rmse, 4), "\n")
+cat("MAE:", round(tree_mae, 4), "\n")
+cat("R-squared:", round(tree_r2, 4), "\n")
+
+
+## 4. Compare to linear model
+comparison <- data.frame(
+  Model = c("Linear Regression", "Decision Tree"),
+  RMSE = c(rmse, tree_rmse),
+  MAE = c(mae, tree_mae),
+  R2 = c(r2, tree_r2)
+)
+
+print(comparison)
+
+
+## 5. Visualize predicted vs actual
+library(ggplot2)
+ggplot(df_test, aes(x = charges.t, y = pred_tree)) +
+  geom_point(color = "darkgreen", alpha = 0.5) +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(
+    title = "Decision Tree: Predicted vs Actual (Transformed Charges)",
+    x = "Actual (Transformed Charges)",
+    y = "Predicted (Transformed Charges)"
+  ) +
+  theme_minimal()
+
+# ==========================
+##### n-FOLD CROSS-VALIDATION (Decision Tree)
+
+library(caret)
+library(rpart)
+library(rpart.plot)
+
+# Set random seed for reproducibility
+set.seed(123)
+
+# Define number of folds 
+train_control <- trainControl(method = "cv", number = 10)
+
+# Train the decision tree with cross-validation
+tree_cv <- train(
+  charges.t ~ age.t + bmi + smoker + sex + children + region,
+  data = df,
+  method = "rpart",
+  trControl = train_control,
+  tuneLength = 10,         
+  metric = "RMSE"
+)
+
+# Print CV results
+print(tree_cv)
+cat("\nBest Complexity Parameter (cp):", tree_cv$bestTune$cp, "\n")
+
+# Visualize the best tree
+rpart.plot(tree_cv$finalModel,
+           main = "Cross-Validated Decision Tree",
+           type = 2, extra = 101, fallen.leaves = TRUE,
+           box.palette = "RdYlGn")
+
+# Evaluate cross-validated performance
+cat("\nCross-Validated RMSE:", round(tree_cv$results$RMSE[which.min(tree_cv$results$RMSE)], 4), "\n")
+cat("Cross-Validated R²:", round(tree_cv$results$Rsquared[which.min(tree_cv$results$RMSE)], 4), "\n")
+
+# Eextract predictions for further evaluation
+df$cv_pred_tree <- predict(tree_cv, newdata = df)
+
+# Plot predicted vs actual (CV)
+library(ggplot2)
+ggplot(df, aes(x = charges.t, y = cv_pred_tree)) +
+  geom_point(color = "darkblue", alpha = 0.5) +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(
+    title = "Cross-Validated Decision Tree: Predicted vs Actual",
+    x = "Actual (Transformed Charges)",
+    y = "Predicted (Cross-Validated)"
+  ) + theme_minimal()
+
+```
