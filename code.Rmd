@@ -1,7 +1,6 @@
 ---
-title: "scitsitats"
+title: "Scitsitats Code File"
 output: html_document
-date: "2025-10-20"
 ---
 
 ```{r setup, include=FALSE}
@@ -25,8 +24,6 @@ library(psych)
 library(rpart)
 library(rpart.plot)
 library(ggplot2)
-
-setwd ("C:/Users/fuche/Desktop/New folder/scitsitats")
 
 ```
 
@@ -778,8 +775,6 @@ grid()
 ## Decision Tree
 
 ```{r decision tree model, echo=TRUE}
-## 1. Build decision tree model
-# Using the same train-test split from regression model
 tree_model <- rpart(charges.t ~ age.t + bmi + smoker + sex + children + region,data = df_train, 
                     method = "anova",      # for continuous outcome
                     control = rpart.control(cp = 0.01, minsplit = 20))
@@ -809,16 +804,15 @@ cat("R-squared:", round(tree_r2, 4), "\n")
 ## 4. Compare to linear model
 comparison <- data.frame(
   Model = c("Linear Regression", "Decision Tree"),
-  RMSE = c(rmse, tree_rmse),
-  MAE = c(mae, tree_mae),
-  R2 = c(r2, tree_r2)
+  RMSE = c(test_rmse, tree_rmse),
+  MAE = c(test_mae, tree_mae),
+  R2 = c(test_r2, tree_r2)
 )
 
 print(comparison)
 
 
 ## 5. Visualize predicted vs actual
-library(ggplot2)
 ggplot(df_test, aes(x = charges.t, y = pred_tree)) +
   geom_point(color = "darkgreen", alpha = 0.5) +
   geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
@@ -827,7 +821,7 @@ ggplot(df_test, aes(x = charges.t, y = pred_tree)) +
     x = "Actual (Transformed Charges)",
     y = "Predicted (Transformed Charges)"
   ) +
-  theme_minimal()
+ theme_minimal()
 
 # ==========================
 ##### n-FOLD CROSS-VALIDATION (Decision Tree)
@@ -879,5 +873,4 @@ ggplot(df, aes(x = charges.t, y = cv_pred_tree)) +
     x = "Actual (Transformed Charges)",
     y = "Predicted (Cross-Validated)"
   ) + theme_minimal()
-
 ```
